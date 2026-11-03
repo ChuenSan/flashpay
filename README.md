@@ -8,7 +8,7 @@ Next.js 16 / React / Prisma 6.19.3 / SQLite 的单实例应用。无需访客注
 
 [公开仓库](https://github.com/ChuenSan/flashpay) · [构建记录](https://github.com/ChuenSan/flashpay/actions/workflows/docker.yml) · [容器镜像](https://github.com/ChuenSan/flashpay/pkgs/container/flashpay)
 
-镜像面向 Linux amd64。推送 `main` 会发布 `latest` 和提交 SHA 标签，推送 `v*` 标签会发布对应版本；Pull Request 只构建和验证。构建使用仓库自带的 `GITHUB_TOKEN`，无需 Docker Hub 账号或额外发布密钥。
+镜像支持 **Linux amd64 和 arm64**，Docker 会根据宿主机架构自动选择。GitHub Actions 分别在原生 AMD64 / ARM64 runner 上构建、测试数据库迁移和容器启动，全部通过后发布统一的多平台镜像标签。推送 `main` 会发布 `latest` 和提交 SHA 标签，推送 `v*` 标签会发布对应版本；Pull Request 只构建和验证。构建使用仓库自带的 `GITHUB_TOKEN`，无需 Docker Hub 账号或额外发布密钥。
 
 镜像已验证可以匿名拉取，无需 `docker login`。若将来另建 GHCR 包后遇到权限拒绝，可在[包设置](https://github.com/users/ChuenSan/packages/container/flashpay/settings)中核对 **Change visibility → Public**；仓库与镜像的可见性需要分别确认。
 
