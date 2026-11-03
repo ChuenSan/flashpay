@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model BrowserState {
+  id              String   @id
+  lastConfirmedAt DateTime?
+}
+
+model SponsorRecord {
+  id          String   @id @default(uuid())
+  browserId   String
+  qq          String?
+  ip          String
+  amountCents Int
+  createdAt   DateTime @default(now())
+  confirmed   Boolean  @default(true)
+  unlocked    Boolean  @default(true)
+  hidden      Boolean  @default(false)
+  claim       ConfirmationClaim?
+
+  @@index([browserId, createdAt])
+  @@index([createdAt])
+  @@index([hidden, createdAt])
+}
+
+// Permanent replay tombstone: deletion removes all record data, not the key.
+// Neither this table nor BrowserState contains QQ or IP.
+model ConfirmationClaim {
+  key       String         @id
+  browserId String
+  recordId  String?        @unique
+  record    SponsorRecord? @relation(fields: [recordId], references: [id], onDelete: SetNull)
+}
+
+// Short-lived HMAC(IP) buckets preserve abuse counters across process restarts.
+// Expired buckets are purged on confirmation; no raw IP is retained here.
+model ConfirmationRate {
+  key       String   @id
+  count     Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+model AdminSession {
+  tokenHash             String   @id
+  credentialFingerprint String
+  createdAt             DateTime @default(now())
+  expiresAt             DateTime
+
+  @@index([expiresAt])
+}

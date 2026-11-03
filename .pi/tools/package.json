@@ -1,0 +1,21 @@
+{
+  "name": "flashpay-project-tools",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": "26.13.0",
+    "npm": "11.20.0"
+  },
+  "packageManager": "npm@11.20.0",
+  "scripts": {
+    "format": "cd ../.. && ./.pi/tools/node_modules/.bin/prettier --write .",
+    "format:check": "cd ../.. && ./.pi/tools/node_modules/.bin/prettier --check .",
+    "mcp:check": "node check-mcp.mjs",
+    "config:check": "node check-config.mjs"
+  },
+  "devDependencies": {
+    "@colbymchenry/codegraph": "1.6.2",
+    "prettier": "3.9.10",
+    "skills": "1.7.6"
+  }
+}

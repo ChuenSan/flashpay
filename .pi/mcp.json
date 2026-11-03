@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "codegraph": {
+      "command": "./scripts/codegraph",
+      "args": ["serve", "--mcp"],
+      "cwd": ".",
+      "exposure": "direct",
+      "description": "Project-local CodeGraph: query symbols, dependencies, call paths and change impact."
+    },
+    "github": {
+      "enabled": true
+    },
+    "cloudflare": {
+      "enabled": false
+    }
+  }
+}

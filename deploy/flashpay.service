@@ -1,0 +1,37 @@
+# Template: install as /etc/systemd/system/flashpay.service after reviewing paths/user.
+[Unit]
+Description=Flashpay single-instance Next.js application
+After=network.target
+RequiresMountsFor=/var/lib/flashpay
+
+[Service]
+Type=simple
+User=flashpay
+Group=flashpay
+WorkingDirectory=/opt/flashpay
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/flashpay/flashpay.env
+# project-tool uses the pinned .tools/node runtime. npm start binds ONLY 127.0.0.1.
+ExecStart=/opt/flashpay/scripts/project-tool npm run start -- --port 3000
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/flashpay /opt/flashpay/.next/cache
+InaccessiblePaths=/etc/flashpay/backup.passphrase /var/backups/flashpay
+RestrictSUIDSGID=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+# No request/access/exception logging through stdout/stderr. Monitor unit state separately.
+# Never enable debug logging or request dumps on a production copy of sensitive data.
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target

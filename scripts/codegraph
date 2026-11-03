@@ -1,0 +1,38 @@
+#!/bin/sh
+# CodeGraph has its own supported Node and project-local user state.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+NODE_HOME="$ROOT/.tools/codegraph-node"
+EXPECTED=$(tr -d '\r\n' < "$ROOT/.pi/tools/codegraph-node-version")
+if [ ! -x "$NODE_HOME/bin/node" ]; then
+  echo 'CodeGraph Node is missing; run ./scripts/bootstrap-tools.' >&2
+  exit 1
+fi
+ACTUAL=$("$NODE_HOME/bin/node" -p 'process.versions.node')
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "Expected CodeGraph Node $EXPECTED; found $ACTUAL. Run ./scripts/bootstrap-tools." >&2
+  exit 1
+fi
+PLATFORM=$("$NODE_HOME/bin/node" -p 'process.platform + "-" + process.arch')
+CLI="$ROOT/.pi/tools/node_modules/@colbymchenry/codegraph-$PLATFORM/lib/dist/bin/codegraph.js"
+if [ ! -f "$CLI" ]; then
+  echo 'CodeGraph platform package is missing; run ./scripts/bootstrap-tools.' >&2
+  exit 1
+fi
+export PATH="$NODE_HOME/bin:$PATH"
+STATE_HOME="$ROOT/.tools/codegraph-home"
+# init checks whether the project contains HOME; preserve the real safety guard.
+# It writes only the project index with telemetry disabled and --yes.
+if [ "${1-}" != init ]; then
+  export HOME="$STATE_HOME"
+fi
+export XDG_CONFIG_HOME="$STATE_HOME/.config"
+export XDG_CACHE_HOME="$STATE_HOME/.cache"
+export XDG_STATE_HOME="$STATE_HOME/.local/state"
+export DO_NOT_TRACK=1
+export CODEGRAPH_TELEMETRY=0
+# Multiple MCP clients share one project-local daemon and writer.
+unset CODEGRAPH_NO_DAEMON CODEGRAPH_ALLOW_UNSAFE_NODE
+mkdir -p "$STATE_HOME"
+cd "$ROOT"
+exec "$NODE_HOME/bin/node" --liftoff-only --disable-warning=ExperimentalWarning "$CLI" "$@"

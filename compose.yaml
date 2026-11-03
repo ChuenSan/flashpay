@@ -1,0 +1,25 @@
+services:
+  flashpay:
+    image: ghcr.io/chuensan/flashpay:latest
+    build: .
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - path: .env.docker
+        format: raw
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/app/var/data/flashpay.db
+      TRUSTED_PROXY_IP_HEADER: x-real-ip
+    volumes:
+      - flashpay-data:/app/var/data
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  flashpay-data:

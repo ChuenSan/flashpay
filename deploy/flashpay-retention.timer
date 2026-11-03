@@ -1,0 +1,11 @@
+[Unit]
+Description=Flashpay daily independent backup expiry
+
+[Timer]
+OnCalendar=*-*-* 00:00:00 UTC
+AccuracySec=1s
+Persistent=true
+Unit=flashpay-retention.service
+
+[Install]
+WantedBy=timers.target

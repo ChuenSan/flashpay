@@ -1,0 +1,19 @@
+#!/bin/sh
+# Use the repository's pinned Node without changing the caller's shell.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+NODE_HOME="$ROOT/.tools/node"
+EXPECTED=$(tr -d '\r\n' < "$ROOT/.node-version")
+if [ ! -x "$NODE_HOME/bin/node" ]; then
+  echo 'Project Node is missing; run ./scripts/bootstrap-tools first.' >&2
+  exit 1
+fi
+ACTUAL=$("$NODE_HOME/bin/node" -p 'process.versions.node')
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "Expected Node $EXPECTED; found $ACTUAL. Run ./scripts/bootstrap-tools." >&2
+  exit 1
+fi
+export PATH="$NODE_HOME/bin:$PATH"
+export npm_config_cache="$ROOT/.tools/npm-cache"
+cd "$ROOT"
+exec "$@"

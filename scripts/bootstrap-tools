@@ -1,0 +1,49 @@
+#!/bin/sh
+# Restore the pinned project runtimes and tools; never installs globally.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+case "$(uname -s)" in
+  Darwin) OS=darwin ;;
+  Linux) OS=linux ;;
+  *) echo 'Bootstrap supports macOS and Linux.' >&2; exit 1 ;;
+esac
+case "$(uname -m)" in
+  arm64|aarch64) ARCH=arm64 ;;
+  x86_64) ARCH=x64 ;;
+  *) echo 'Unsupported CPU architecture.' >&2; exit 1 ;;
+esac
+
+install_node() {
+  VERSION=$1
+  NODE_HOME=$2
+  if [ -x "$NODE_HOME/bin/node" ] && [ "$("$NODE_HOME/bin/node" -p 'process.versions.node')" = "$VERSION" ]; then
+    return
+  fi
+  mkdir -p "$ROOT/.tools/downloads"
+  TMP=$(mktemp -d "$ROOT/.tools/downloads/node.XXXXXX")
+  trap 'rm -rf "$TMP"' EXIT HUP INT TERM
+  FILE="node-v$VERSION-$OS-$ARCH.tar.xz"
+  URL="https://nodejs.org/dist/v$VERSION"
+  curl -fLsS "$URL/$FILE" -o "$TMP/$FILE"
+  curl -fLsS "$URL/SHASUMS256.txt" -o "$TMP/SHASUMS256.txt"
+  (
+    cd "$TMP"
+    grep "  $FILE\$" SHASUMS256.txt > checksum
+    test -s checksum
+    if command -v sha256sum >/dev/null 2>&1; then
+      sha256sum -c checksum
+    else
+      shasum -a 256 -c checksum
+    fi
+  )
+  mkdir -p "$TMP/runtime"
+  tar -xJf "$TMP/$FILE" -C "$TMP/runtime" --strip-components=1
+  rm -rf "$NODE_HOME"
+  mv "$TMP/runtime" "$NODE_HOME"
+  rm -rf "$TMP"
+  trap - EXIT HUP INT TERM
+}
+
+install_node "$(tr -d '\r\n' < "$ROOT/.node-version")" "$ROOT/.tools/node"
+install_node "$(tr -d '\r\n' < "$ROOT/.pi/tools/codegraph-node-version")" "$ROOT/.tools/codegraph-node"
+"$ROOT/scripts/project-tool" npm --prefix .pi/tools ci --ignore-scripts

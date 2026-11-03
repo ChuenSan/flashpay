@@ -1,0 +1,7 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "prettier.prettierPath": "./.pi/tools/node_modules/prettier",
+  "prettier.requireConfig": true,
+  "files.eol": "\n"
+}

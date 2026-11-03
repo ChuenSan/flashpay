@@ -1,0 +1,22 @@
+name: Project tooling
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore project Node and locked tools
+        run: ./scripts/bootstrap-tools
+      - name: Check runtime and configuration consistency
+        run: ./scripts/project-tool npm --prefix .pi/tools run config:check
+      - name: Check project formatting
+        run: ./scripts/project-tool npm --prefix .pi/tools run format:check
+      - name: Check launcher syntax
+        run: sh -n scripts/bootstrap-tools scripts/project-tool scripts/codegraph

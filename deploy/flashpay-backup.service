@@ -1,0 +1,30 @@
+# Template: backup key and database are separate; no application env file needed.
+[Unit]
+Description=Flashpay authenticated encrypted SQLite online backup
+RequiresMountsFor=/var/lib/flashpay /var/backups/flashpay
+
+[Service]
+Type=oneshot
+User=flashpay
+Group=flashpay
+WorkingDirectory=/opt/flashpay
+UMask=0077
+ExecStart=/opt/flashpay/scripts/project-tool python3 -B /opt/flashpay/scripts/backup.py --node /opt/flashpay/.tools/node/bin/node --database /var/lib/flashpay/flashpay.db --backup-dir /var/backups/flashpay --passphrase-file /etc/flashpay/backup.passphrase
+# Expiry is independent of snapshot/key success; this also runs after a failed ExecStart.
+ExecStopPost=/opt/flashpay/scripts/project-tool python3 -B /opt/flashpay/scripts/backup.py prune --backup-dir /var/backups/flashpay
+TimeoutStartSec=30min
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateNetwork=true
+ProtectHome=true
+ProtectSystem=strict
+# SQLite read-only online backup may need access to shared-memory sidecars.
+ReadWritePaths=/var/lib/flashpay /var/backups/flashpay
+InaccessiblePaths=/etc/flashpay/flashpay.env
+RestrictSUIDSGID=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+# Scripts emit fixed maintenance status only, never database rows/QQ/IP or crypto stderr.
+StandardOutput=journal
+StandardError=journal

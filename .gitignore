@@ -1,0 +1,27 @@
+/.tools/node/
+/.tools/codegraph-node/
+/.tools/codegraph-home/
+/.tools/npm-cache/
+/.tools/downloads/
+node_modules/
+/.codegraph/
+/.codegraph-*/
+.DS_Store
+.next/
+.env
+.env.*
+!.env.example
+var/
+*.tsbuildinfo
+coverage/
+__pycache__/
+*.pyc
+# Local verification artifacts can contain session data or private records.
+.scratch/
+shots/
+*.csv
+*.db
+*.db-*
+*.sqlite*
+*.pem
+*.key

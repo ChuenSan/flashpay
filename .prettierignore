@@ -1,0 +1,15 @@
+.tools/
+node_modules/
+.pi/tools/node_modules/
+.codegraph/
+.codegraph-*/
+.next/
+var/
+package-lock.json
+.scratch/sponsorship-delivery/shots/
+.scratch/sponsorship-delivery/logs/
+# Vendor skills are preserved byte-for-byte from their locked upstream revision.
+.agents/skills/
+.pi/skills/
+skills-lock.json
+.pi/tools/package-lock.json
