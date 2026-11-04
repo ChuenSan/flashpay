@@ -44,7 +44,7 @@
 - `ADMIN_PASSWORD_HASH`：必须调用现有后端 `src/lib/auth-password.ts` 的 `hashPassword`，不要另造哈希格式。
 - `SESSION_SECRET`：至少 32 字节独立高熵随机材料；不可使用示例字符串、管理员密码或备份口令。
 - `DATABASE_URL=file:/var/lib/flashpay/flashpay.db`：Prisma URL；备份/恢复参数则是 `/var/lib/flashpay/flashpay.db`，**不带 `file:`**。
-- `DOWNLOAD_URL`：部署者从 spec §2 手工复制真实链接；这里和 `.env.example` 不填 example 下载链接。不得写入 `NEXT_PUBLIC_*`、静态资源或初始客户端页面。
+- `DOWNLOAD_URL`：部署者从 spec §2 手工复制真实链接，作为初始/回退地址；这里和 `.env.example` 不填 example 下载链接。登录 `/akak` 可修改“下载链接”并保存到数据库，优先于环境变量，新的确认、重试和刷新恢复立即使用新地址；已打开的下载入口需刷新。设置随数据库备份和恢复。升级时执行新增迁移、生成 Prisma Client 并重启应用。不得写入 `NEXT_PUBLIC_*`、静态资源或初始客户端页面。
 - `TRUSTED_PROXY_IP_HEADER=x-real-ip`：已与后端 config 对齐，production 强制配置；其安全性完全依赖第 4 节的隔离及覆盖边界。
 - `NODE_ENV=production`：由应用 systemd unit 设置；后端强制 HTTPS，Cookie 应为 `Secure` / `HttpOnly` / `SameSite`。不得为了绕过验证而降为 development。
 

@@ -48,7 +48,7 @@ docker compose up -d
 - 将 `var/admin-password.env` 的整行复制到 `.env` 对应位置。`--dotenv` 已把每个 `$` 写成 `\$`；仅加单引号不能阻止 Next 变量展开。**systemd 环境文件必须用不带 `--dotenv` 生成的原始哈希**，不能复制这条转义行。
 - `SESSION_SECRET` 独立生成高熵随机值，至少 32 字节，不能复用密码或备份口令。
 - `DATABASE_URL=file:../var/data/flashpay.db`（相对于 Prisma schema）。
-- `DOWNLOAD_URL` 手工配置真实资源地址，不用示例 URL，也不要放进 `NEXT_PUBLIC_*`。
+- `DOWNLOAD_URL` 手工配置初始/回退资源地址，不用示例 URL，也不要放进 `NEXT_PUBLIC_*`。登录 `/akak` 后可在“下载链接”中修改并保存；数据库设置优先，保存后新的确认、重试和刷新恢复均使用新地址，已打开的下载入口需刷新。链接设置随数据库持久化和备份。升级时先执行数据库迁移并重新生成 Prisma Client，再重启应用。
 - 本地直连 `TRUSTED_PROXY_IP_HEADER` 留空；生产强制 `x-real-ip`，只适用于应用仅 `127.0.0.1` 可达且 nginx 覆盖单个来源 IP 的部署。
 
 可用下面的命令将随机 secret 写入私密临时文件，不打印到终端；配置后删除两个临时文件：

@@ -1,14 +1,14 @@
 import { Prisma, type SponsorRecord } from "@prisma/client";
 import { database } from "./db";
-import { serverConfig } from "./config";
+import { getDownloadUrl } from "./settings";
 import { HttpError } from "./http";
 import { keyedDigest, RECOVERY_MS } from "./security";
 import { parseConfirmation } from "./validation";
 
-export function unlockPayload(record: SponsorRecord) {
+export function unlockPayload(record: SponsorRecord, downloadUrl: string) {
   return {
     unlocked: true as const,
-    downloadUrl: serverConfig().downloadUrl,
+    downloadUrl,
     confirmedAt: record.createdAt.toISOString(),
     expiresAt: new Date(record.createdAt.getTime() + RECOVERY_MS).toISOString(),
     recordId: record.id,
@@ -58,6 +58,7 @@ export async function confirm(
   body: Record<string, unknown>,
 ) {
   const input = parseConfirmation(body);
+  const downloadUrl = await getDownloadUrl();
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
       return await database().$transaction(
@@ -101,7 +102,10 @@ export async function confirm(
                 "UNLOCK_EXPIRED",
               );
             }
-            return { ...unlockPayload(claim.record), replayed: true };
+            return {
+              ...unlockPayload(claim.record, downloadUrl),
+              replayed: true,
+            };
           }
           const browser = await tx.browserState.findUniqueOrThrow({
             where: { id: browserId },
@@ -141,7 +145,7 @@ export async function confirm(
             where: { id: browserId },
             data: { lastConfirmedAt: now },
           });
-          return { ...unlockPayload(record), replayed: false };
+          return { ...unlockPayload(record, downloadUrl), replayed: false };
         },
         { maxWait: 5000, timeout: 5000 },
       );
@@ -172,5 +176,7 @@ export async function recover(browserId: string) {
     },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
-  return record ? unlockPayload(record) : { unlocked: false as const };
+  return record
+    ? unlockPayload(record, await getDownloadUrl())
+    : { unlocked: false as const };
 }

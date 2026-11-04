@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import DownloadSettings from "./download-settings";
 import "./admin.css";
 
 // Client pages cannot set HTTP response cache headers. The server must send
@@ -698,6 +699,8 @@ export default function AdminPage() {
           </button>
         </div>
       </header>
+
+      <DownloadSettings request={request} disabled={logoutBusy} />
 
       <section
         className="admin-overview"

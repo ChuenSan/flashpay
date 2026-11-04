@@ -24,6 +24,10 @@ import { POST as login } from "../../app/api/admin/login/route";
 import { POST as logout } from "../../app/api/admin/logout/route";
 import { GET as session } from "../../app/api/admin/session/route";
 import { GET as records } from "../../app/api/admin/records/route";
+import {
+  GET as getSettings,
+  PUT as putSettings,
+} from "../../app/api/admin/settings/route";
 import { PATCH, DELETE } from "../../app/api/admin/records/[id]/route";
 import { POST as exportCsv } from "../../app/api/admin/export/route";
 
@@ -436,6 +440,138 @@ test("backend contracts, persistence and security", async (t) => {
           .status,
         403,
       );
+    },
+  );
+
+  await t.test(
+    "download settings require admin auth and a trusted origin",
+    async () => {
+      const path = "/api/admin/settings";
+      assert.equal((await getSettings(request(path))).status, 401);
+      assert.equal(
+        (
+          await putSettings(
+            request(path, "PUT", {
+              downloadUrl: "https://other.example.test/",
+            }),
+          )
+        ).status,
+        401,
+      );
+      const initial = await getSettings(request(path, "GET", undefined, admin));
+      assert.equal(initial.status, 200);
+      assert.match(initial.headers.get("cache-control")!, /no-store/);
+      assert.deepEqual(await initial.json(), {
+        downloadUrl: process.env.DOWNLOAD_URL,
+      });
+      assert.equal(
+        (
+          await putSettings(
+            request(
+              path,
+              "PUT",
+              { downloadUrl: "https://other.example.test/" },
+              admin,
+              { origin: "https://attacker.test" },
+            ),
+          )
+        ).status,
+        403,
+      );
+      for (const downloadUrl of [
+        undefined,
+        null,
+        42,
+        "",
+        "   ",
+        "/relative",
+        "javascript:alert(1)",
+        "data:text/html,test",
+        "https://user:pass@example.test/",
+        "https://example.test/" + "a".repeat(2048),
+      ]) {
+        const response = await putSettings(
+          request(path, "PUT", { downloadUrl }, admin),
+        );
+        assert.equal(response.status, 400);
+        assert.equal((await response.json()).code, "INVALID_DOWNLOAD_URL");
+      }
+      assert.equal(await database().siteSetting.count(), 0);
+    },
+  );
+
+  await t.test(
+    "saved download link is persistent and used by confirmations and recovery",
+    async () => {
+      const path = "/api/admin/settings";
+      const downloadUrl = "https://delivery.example.test/share/new?pwd=Ab12#";
+      const saved = await putSettings(
+        request(path, "PUT", { downloadUrl: ` ${downloadUrl} ` }, admin),
+      );
+      assert.equal(saved.status, 200);
+      assert.match(saved.headers.get("cache-control")!, /no-store/);
+      assert.deepEqual(await saved.json(), { downloadUrl });
+      assert.deepEqual(
+        await (
+          await getSettings(request(path, "GET", undefined, admin))
+        ).json(),
+        { downloadUrl },
+      );
+      const recovered = await unlock(
+        request("/api/unlock", "GET", undefined, firstBrowser),
+      );
+      assert.equal((await recovered.json()).downloadUrl, downloadUrl);
+      const replayed = await confirm(
+        request("/api/confirm", "POST", confirmation(firstKey), firstBrowser),
+      );
+      assert.equal(replayed.status, 200);
+      assert.equal((await replayed.json()).downloadUrl, downloadUrl);
+      const freshBrowser = await browser();
+      const fresh = await confirm(
+        request("/api/confirm", "POST", confirmation(), freshBrowser),
+      );
+      assert.equal(fresh.status, 200);
+      const payload = await fresh.json();
+      assert.equal(payload.downloadUrl, downloadUrl);
+      await database().sponsorRecord.delete({
+        where: { id: payload.recordId },
+      });
+      assert.equal(
+        (await (await unlock(request("/api/unlock"))).json()).downloadUrl,
+        undefined,
+      );
+      assert.equal(
+        (await (await sponsors(request("/api/sponsors"))).text()).includes(
+          downloadUrl,
+        ),
+        false,
+      );
+      const source = `const { getDownloadUrl } = require('./src/lib/settings.ts'); const { database } = require('./src/lib/db.ts'); (async () => { if (await getDownloadUrl() !== ${JSON.stringify(downloadUrl)}) throw Error('download setting did not persist'); await database().$disconnect(); })().catch(() => process.exit(1));`;
+      execFileSync(
+        process.execPath,
+        ["node_modules/tsx/dist/cli.mjs", "-e", source],
+        { env: process.env, stdio: "pipe" },
+      );
+      const replacement =
+        "https://delivery.example.test/share/replaced?pwd=Cd34#";
+      assert.equal(
+        (
+          await putSettings(
+            request(path, "PUT", { downloadUrl: replacement }, admin),
+          )
+        ).status,
+        200,
+      );
+      assert.equal(
+        (
+          await (
+            await unlock(request("/api/unlock", "GET", undefined, firstBrowser))
+          ).json()
+        ).downloadUrl,
+        replacement,
+      );
+      assert.equal(await database().siteSetting.count(), 1);
+      await database().siteSetting.deleteMany();
     },
   );
 

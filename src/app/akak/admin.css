@@ -85,6 +85,7 @@
   overflow-wrap: anywhere;
 }
 
+.admin-download-settings,
 .admin-overview,
 .admin-records,
 .admin-access {
@@ -93,9 +94,18 @@
   background: #fff;
 }
 
+.admin-download-settings,
 .admin-overview {
   padding: 16px 24px;
   margin-bottom: 18px;
+}
+
+.admin-download-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  margin: 16px 0 12px;
 }
 
 .admin-stats {
@@ -543,9 +553,14 @@
     max-width: 70%;
   }
 
+  .admin-download-settings,
   .admin-overview,
   .admin-records {
     padding: 18px 16px;
+  }
+
+  .admin-download-form {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .admin-stats {
