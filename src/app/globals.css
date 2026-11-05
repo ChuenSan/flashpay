@@ -235,6 +235,50 @@ button:active:not(:disabled),
 .risk-note p {
   max-width: 83ch;
 }
+.identity-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 20px;
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.identity-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+.identity-people figure {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+.identity-people img {
+  display: block;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+.identity-people figcaption {
+  font-size: 14px;
+  font-weight: 600;
+}
+.identity-explanation {
+  font-size: 14px;
+  line-height: 1.75;
+}
+.identity-explanation p:first-child {
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+.identity-explanation strong {
+  font-weight: 600;
+}
 .workspace {
   background: var(--paper);
   border: 1px solid var(--line);
@@ -839,6 +883,18 @@ button:active:not(:disabled),
   .risk-note strong {
     display: block;
     margin-bottom: 3px;
+  }
+  .identity-note {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+  .identity-people figure {
+    gap: 8px;
+  }
+  .identity-people img {
+    width: 40px;
+    height: 40px;
   }
   .workspace {
     border-radius: 13px;

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { publicConfig } from "@/lib/public-config";
 import { SponsorWorkspace } from "@/components/sponsor-workspace";
@@ -52,6 +53,42 @@ export default function Home() {
             刷机有数据丢失或设备无法启动的风险，请先备份重要数据。
           </p>
         </div>
+        <section
+          className="identity-note"
+          aria-label="刷机包作者与项目赞助者说明"
+        >
+          <div className="identity-people">
+            <figure>
+              <Image
+                src="/identity/project-sponsor-avatar.png"
+                alt="项目赞助者头像"
+                width={48}
+                height={48}
+              />
+              <figcaption>项目赞助者</figcaption>
+            </figure>
+            <figure>
+              <Image
+                src="/identity/package-author-avatar.png"
+                alt="刷机包作者头像"
+                width={48}
+                height={48}
+              />
+              <figcaption>刷机包作者</figcaption>
+            </figure>
+          </div>
+          <div className="identity-explanation">
+            <p>
+              本刷机包由作者制作，项目赞助者仅提供赞助支持，并非刷机包作者。
+            </p>
+            <p>
+              <strong>
+                项目赞助者无法提供刷机指导、故障排查等技术帮助，请勿向赞助者咨询技术问题。
+              </strong>
+            </p>
+            <p>由于时间有限，作者目前无法提供技术指导，敬请理解与谅解。</p>
+          </div>
+        </section>
         <SponsorWorkspace />
         <section
           className="usage-guide"
