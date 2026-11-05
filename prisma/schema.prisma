@@ -48,11 +48,12 @@ model ConfirmationRate {
   @@index([expiresAt])
 }
 
-// Singleton site configuration; the delivery URL stays server-side.
+// Singleton site configuration; resource credentials stay server-side.
 model SiteSetting {
-  id          String   @id
-  downloadUrl String
-  updatedAt   DateTime @updatedAt
+  id              String   @id
+  downloadUrl     String
+  archivePassword String   @default("")
+  updatedAt       DateTime @updatedAt
 }
 
 model AdminSession {

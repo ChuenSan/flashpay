@@ -595,6 +595,24 @@ button:active:not(:disabled),
   color: var(--muted);
   line-height: 1.9;
 }
+.archive-password {
+  max-width: 100%;
+  margin-top: 12px;
+  padding: 14px 20px 4px;
+  border-radius: 7px;
+  background: var(--soft);
+}
+.archive-password > span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.archive-password code {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 16px;
+}
 .another-button {
   margin-top: 10px;
   color: var(--muted);

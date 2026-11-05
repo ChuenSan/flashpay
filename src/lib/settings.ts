@@ -4,14 +4,22 @@ import { HttpError } from "./http";
 
 const SETTINGS_ID = "site";
 
-export async function getDownloadUrl(): Promise<string> {
+export type DownloadSettings = { downloadUrl: string; archivePassword: string };
+
+export async function getDownloadSettings(): Promise<DownloadSettings> {
   const settings = await database().siteSetting.findUnique({
     where: { id: SETTINGS_ID },
   });
-  return settings?.downloadUrl ?? serverConfig().downloadUrl;
+  return {
+    downloadUrl: settings?.downloadUrl ?? serverConfig().downloadUrl,
+    archivePassword: settings?.archivePassword ?? "",
+  };
 }
 
-export async function saveDownloadUrl(value: unknown): Promise<string> {
+export async function saveDownloadSettings(
+  value: unknown,
+  archivePassword: unknown,
+): Promise<DownloadSettings> {
   if (typeof value !== "string" || !value.trim() || value.length > 2048) {
     throw new HttpError(
       400,
@@ -41,10 +49,27 @@ export async function saveDownloadUrl(value: unknown): Promise<string> {
       "INVALID_DOWNLOAD_URL",
     );
   }
+  if (
+    archivePassword !== undefined &&
+    (typeof archivePassword !== "string" || archivePassword.length > 1024)
+  ) {
+    throw new HttpError(
+      400,
+      "压缩包密码须为文本，最多 1024 个字符；无密码可留空",
+      "INVALID_ARCHIVE_PASSWORD",
+    );
+  }
+  const data = {
+    downloadUrl: url.href,
+    ...(typeof archivePassword === "string" ? { archivePassword } : {}),
+  };
   const settings = await database().siteSetting.upsert({
     where: { id: SETTINGS_ID },
-    create: { id: SETTINGS_ID, downloadUrl: url.href },
-    update: { downloadUrl: url.href },
+    create: { id: SETTINGS_ID, ...data },
+    update: data,
   });
-  return settings.downloadUrl;
+  return {
+    downloadUrl: settings.downloadUrl,
+    archivePassword: settings.archivePassword,
+  };
 }

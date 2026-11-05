@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import type { DownloadSettings as Settings } from "@/lib/settings";
 
 type AdminRequest = <T = void>(
   url: string,
@@ -8,18 +9,21 @@ type AdminRequest = <T = void>(
   format?: "json" | "blob" | "none",
 ) => Promise<T>;
 
-type Settings = { downloadUrl: string };
-
-function readDownloadUrl(result: unknown) {
+function readSettings(result: unknown): Settings {
   if (
     !result ||
     typeof result !== "object" ||
     !("downloadUrl" in result) ||
-    typeof result.downloadUrl !== "string"
+    typeof result.downloadUrl !== "string" ||
+    !("archivePassword" in result) ||
+    typeof result.archivePassword !== "string"
   ) {
     throw new Error("下载设置响应格式不正确，请重试。");
   }
-  return result.downloadUrl;
+  return {
+    downloadUrl: result.downloadUrl,
+    archivePassword: result.archivePassword,
+  };
 }
 
 function errorMessage(error: unknown) {
@@ -38,6 +42,7 @@ export default function DownloadSettings({
   disabled?: boolean;
 }) {
   const [downloadUrl, setDownloadUrl] = useState("");
+  const [archivePassword, setArchivePassword] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,6 +65,7 @@ export default function DownloadSettings({
       setLoaded(false);
       setSaving(false);
       setDownloadUrl("");
+      setArchivePassword("");
       setError("");
       setNotice("");
       try {
@@ -69,7 +75,9 @@ export default function DownloadSettings({
           "json",
         );
         if (controller.signal.aborted) return;
-        setDownloadUrl(readDownloadUrl(result));
+        const settings = readSettings(result);
+        setDownloadUrl(settings.downloadUrl);
+        setArchivePassword(settings.archivePassword);
         setLoaded(true);
       } catch (error) {
         if (!controller.signal.aborted && !aborted(error))
@@ -102,14 +110,21 @@ export default function DownloadSettings({
         "/api/admin/settings",
         {
           method: "PUT",
-          body: JSON.stringify({ downloadUrl: downloadUrl.trim() }),
+          body: JSON.stringify({
+            downloadUrl: downloadUrl.trim(),
+            archivePassword,
+          }),
           signal: controller.signal,
         },
         "json",
       );
       if (controller.signal.aborted) return;
-      setDownloadUrl(readDownloadUrl(result));
-      setNotice("下载链接已保存并立即生效，已打开的页面请刷新后获取新地址。");
+      const settings = readSettings(result);
+      setDownloadUrl(settings.downloadUrl);
+      setArchivePassword(settings.archivePassword);
+      setNotice(
+        "下载设置已保存并立即生效，已打开的页面请刷新后获取最新链接和密码。",
+      );
     } catch (error) {
       if (!controller.signal.aborted && !aborted(error))
         setError(errorMessage(error));
@@ -153,20 +168,41 @@ export default function DownloadSettings({
             }}
           />
         </label>
+        <label className="admin-field" htmlFor="admin-archive-password">
+          压缩包密码（选填）
+          <input
+            className="admin-input"
+            id="admin-archive-password"
+            name="archivePassword"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={1024}
+            value={archivePassword}
+            disabled={busy || !loaded}
+            aria-describedby="admin-download-help"
+            onChange={(event) => {
+              setArchivePassword(event.target.value);
+              setError("");
+              setNotice("");
+            }}
+          />
+        </label>
         <button
           className="admin-button admin-button-primary"
           type="submit"
           disabled={busy || !loaded || !downloadUrl.trim()}
         >
-          {saving ? "正在保存…" : "保存下载链接"}
+          {saving ? "正在保存…" : "保存下载设置"}
         </button>
       </form>
       <p id="admin-download-help" className="admin-help">
-        支付确认后的「打开下载」「复制链接」使用此地址。保存后立即生效，已打开的页面需刷新后获取新地址。
+        赞助确认后展示下载链接和压缩包密码。密码用于解压文件，区别于网盘提取码；无密码可留空。保存后立即生效，已打开的页面需刷新。
       </p>
       {loading && !disabled && (
         <p className="admin-help" role="status">
-          正在加载下载链接…
+          正在加载下载设置…
         </p>
       )}
       {error && (

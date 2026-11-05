@@ -9,6 +9,7 @@ import { isValidQq, parseAmountCents } from "@/lib/input-rules";
 type Unlock = {
   unlocked: true;
   downloadUrl: string;
+  archivePassword: string;
   confirmedAt: string;
   expiresAt: string;
   recordId: string;
@@ -49,7 +50,7 @@ export function SponsorWorkspace() {
   const [unlock, setUnlock] = useState<Unlock | null>(null);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [listError, setListError] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"link" | "password" | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [now, setNow] = useState(0);
   const [draftLoaded, setDraftLoaded] = useState(false);
@@ -242,9 +243,18 @@ export function SponsorWorkspace() {
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(unlock!.downloadUrl);
-      setCopied(true);
+      setCopied("link");
     } catch {
       setError("无法自动复制，请使用「打开下载」进入资源页面。");
+    }
+  }
+
+  async function copyPassword() {
+    try {
+      await navigator.clipboard.writeText(unlock!.archivePassword);
+      setCopied("password");
+    } catch {
+      setError("无法自动复制，请手动选择上方的压缩包密码并复制。");
     }
   }
 
@@ -280,8 +290,21 @@ export function SponsorWorkspace() {
               打开下载 <span aria-hidden="true">↗</span>
             </a>
             <button type="button" className="text-button" onClick={copyLink}>
-              {copied ? "链接已复制" : "复制资源链接"}
+              {copied === "link" ? "链接已复制" : "复制资源链接"}
             </button>
+            {unlock.archivePassword && (
+              <div className="archive-password">
+                <span>压缩包密码</span>
+                <code>{unlock.archivePassword}</code>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={copyPassword}
+                >
+                  {copied === "password" ? "密码已复制" : "复制压缩包密码"}
+                </button>
+              </div>
+            )}
             <div className="restore-note">
               此浏览器可恢复至{" "}
               {new Intl.DateTimeFormat("zh-CN", {
@@ -309,7 +332,11 @@ export function SponsorWorkspace() {
               再支持一次
             </button>
             <span className="sr-only" role="status">
-              {copied ? "资源链接已复制" : ""}
+              {copied === "link"
+                ? "资源链接已复制"
+                : copied === "password"
+                  ? "压缩包密码已复制"
+                  : ""}
             </span>
           </div>
         ) : (

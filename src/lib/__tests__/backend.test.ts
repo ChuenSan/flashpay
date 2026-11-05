@@ -463,6 +463,7 @@ test("backend contracts, persistence and security", async (t) => {
       assert.match(initial.headers.get("cache-control")!, /no-store/);
       assert.deepEqual(await initial.json(), {
         downloadUrl: process.env.DOWNLOAD_URL,
+        archivePassword: "",
       });
       assert.equal(
         (
@@ -510,12 +511,15 @@ test("backend contracts, persistence and security", async (t) => {
       );
       assert.equal(saved.status, 200);
       assert.match(saved.headers.get("cache-control")!, /no-store/);
-      assert.deepEqual(await saved.json(), { downloadUrl });
+      assert.deepEqual(await saved.json(), {
+        downloadUrl,
+        archivePassword: "",
+      });
       assert.deepEqual(
         await (
           await getSettings(request(path, "GET", undefined, admin))
         ).json(),
-        { downloadUrl },
+        { downloadUrl, archivePassword: "" },
       );
       const recovered = await unlock(
         request("/api/unlock", "GET", undefined, firstBrowser),
@@ -546,7 +550,7 @@ test("backend contracts, persistence and security", async (t) => {
         ),
         false,
       );
-      const source = `const { getDownloadUrl } = require('./src/lib/settings.ts'); const { database } = require('./src/lib/db.ts'); (async () => { if (await getDownloadUrl() !== ${JSON.stringify(downloadUrl)}) throw Error('download setting did not persist'); await database().$disconnect(); })().catch(() => process.exit(1));`;
+      const source = `const { getDownloadSettings } = require('./src/lib/settings.ts'); const { database } = require('./src/lib/db.ts'); (async () => { if ((await getDownloadSettings()).downloadUrl !== ${JSON.stringify(downloadUrl)}) throw Error('download setting did not persist'); await database().$disconnect(); })().catch(() => process.exit(1));`;
       execFileSync(
         process.execPath,
         ["node_modules/tsx/dist/cli.mjs", "-e", source],

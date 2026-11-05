@@ -1,14 +1,17 @@
 import { Prisma, type SponsorRecord } from "@prisma/client";
 import { database } from "./db";
-import { getDownloadUrl } from "./settings";
+import { getDownloadSettings, type DownloadSettings } from "./settings";
 import { HttpError } from "./http";
 import { keyedDigest, RECOVERY_MS } from "./security";
 import { parseConfirmation } from "./validation";
 
-export function unlockPayload(record: SponsorRecord, downloadUrl: string) {
+export function unlockPayload(
+  record: SponsorRecord,
+  settings: DownloadSettings,
+) {
   return {
     unlocked: true as const,
-    downloadUrl,
+    ...settings,
     confirmedAt: record.createdAt.toISOString(),
     expiresAt: new Date(record.createdAt.getTime() + RECOVERY_MS).toISOString(),
     recordId: record.id,
@@ -58,7 +61,7 @@ export async function confirm(
   body: Record<string, unknown>,
 ) {
   const input = parseConfirmation(body);
-  const downloadUrl = await getDownloadUrl();
+  const settings = await getDownloadSettings();
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
       return await database().$transaction(
@@ -103,7 +106,7 @@ export async function confirm(
               );
             }
             return {
-              ...unlockPayload(claim.record, downloadUrl),
+              ...unlockPayload(claim.record, settings),
               replayed: true,
             };
           }
@@ -145,7 +148,7 @@ export async function confirm(
             where: { id: browserId },
             data: { lastConfirmedAt: now },
           });
-          return { ...unlockPayload(record, downloadUrl), replayed: false };
+          return { ...unlockPayload(record, settings), replayed: false };
         },
         { maxWait: 5000, timeout: 5000 },
       );
@@ -177,6 +180,6 @@ export async function recover(browserId: string) {
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
   return record
-    ? unlockPayload(record, await getDownloadUrl())
+    ? unlockPayload(record, await getDownloadSettings())
     : { unlocked: false as const };
 }
