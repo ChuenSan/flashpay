@@ -72,12 +72,26 @@ jobs:
           cache-to: type=gha,scope=image-${{ matrix.arch }},mode=max
       - name: Verify migration and HTTP startup without deployment secrets
         run: |
-          docker run -d --name flashpay-smoke flashpay:smoke
+          set -euo pipefail
+          # The dynamic homepage reads release settings and validates runtime config.
+          # Generate throwaway CI credentials; never use deployment secrets or bake them into the image.
+          session_secret=$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')
+          admin_hash=$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))' | npm run --silent admin:hash)
+          echo "::add-mask::$session_secret"
+          echo "::add-mask::$admin_hash"
           trap 'docker logs flashpay-smoke; docker rm -f flashpay-smoke' EXIT
+          docker run -d --name flashpay-smoke --network none \
+            --env "SESSION_SECRET=$session_secret" \
+            --env ADMIN_USERNAME=ci-smoke-admin \
+            --env "ADMIN_PASSWORD_HASH=$admin_hash" \
+            --env APP_ORIGIN=https://flashpay-smoke.invalid \
+            --env DOWNLOAD_URL=https://download-smoke.invalid/resource \
+            --env TRUSTED_PROXY_IP_HEADER=x-real-ip \
+            flashpay:smoke
           for attempt in $(seq 1 30); do
             echo "Checking container startup (${attempt}/30)"
-            if docker exec flashpay-smoke node -e 'fetch("http://127.0.0.1:3000/").then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))'; then
-              docker exec flashpay-smoke test -f /app/var/data/flashpay.db
+            if docker exec flashpay-smoke node -e 'fetch("http://127.0.0.1:3000/", { signal: AbortSignal.timeout(3000) }).then(async r => { await r.text(); if (r.status !== 200) process.exit(1) }).catch(() => process.exit(1))'; then
+              docker exec flashpay-smoke test -s /app/var/data/flashpay.db
               exit 0
             fi
             sleep 2
