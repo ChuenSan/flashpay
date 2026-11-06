@@ -1,11 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { publicConfig } from "@/lib/public-config";
+import { buildResourceReleases } from "@/lib/resource-releases";
+import { getResourceReleaseSettings } from "@/lib/release-settings";
 import { SponsorWorkspace } from "@/components/sponsor-workspace";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
+export default async function Home() {
+  const resourceReleases = buildResourceReleases(
+    await getResourceReleaseSettings(),
+  );
   return (
     <div className="site-shell">
       <header className="site-header">
@@ -20,17 +25,14 @@ export default function Home() {
           资源交付
         </Link>
         <nav aria-label="主导航">
-          <a href="#guide">使用说明</a>
-          <a href={publicConfig.demoUrl} target="_blank" rel="noreferrer">
-            B 站演示 ↗
-          </a>
+          <a href="#releases">更新日志</a>
+          <a href="#guide">领取说明</a>
         </nav>
       </header>
       <main id="main-content">
         <section className="resource-heading" aria-labelledby="resource-title">
           <div>
             <h1 id="resource-title">{publicConfig.resourceName}</h1>
-            <p>{publicConfig.resourceDescription}</p>
           </div>
           <a
             className="demo-link"
@@ -46,74 +48,135 @@ export default function Home() {
             </span>
           </a>
         </section>
-        <div className="risk-note">
-          <strong>刷机前请注意</strong>
-          <p>
-            {publicConfig.compatibility}{" "}
-            刷机有数据丢失或设备无法启动的风险，请先备份重要数据。
-          </p>
+        <div className="resource-layout">
+          <aside className="resource-context" aria-label="资源与支持说明">
+            <div className="risk-note">
+              <strong>先核对，再刷机</strong>
+              <p>
+                {publicConfig.compatibility}{" "}
+                刷机有数据丢失或设备无法启动的风险，请先备份重要数据。
+              </p>
+            </div>
+            <section
+              className="identity-note"
+              aria-label="刷机包作者与项目赞助者说明"
+            >
+              <div className="identity-people">
+                <figure>
+                  <Image
+                    src="/identity/project-sponsor-avatar.png"
+                    alt="项目赞助者头像"
+                    width={48}
+                    height={48}
+                  />
+                  <figcaption>项目赞助者</figcaption>
+                </figure>
+                <span className="identity-separator" aria-hidden="true">
+                  ≠
+                </span>
+                <figure>
+                  <Image
+                    src="/identity/package-author-avatar.png"
+                    alt="刷机包作者头像"
+                    width={48}
+                    height={48}
+                  />
+                  <figcaption>刷机包作者</figcaption>
+                </figure>
+              </div>
+              <p className="identity-explanation">
+                赞助者仅提供赞助支持，并非作者；不提供刷机指导或故障排查。作者目前也无法提供技术指导。
+              </p>
+            </section>
+          </aside>
+          <SponsorWorkspace />
         </div>
         <section
-          className="identity-note"
-          aria-label="刷机包作者与项目赞助者说明"
+          className="release-notes"
+          id="releases"
+          aria-labelledby="releases-title"
         >
-          <div className="identity-people">
-            <figure>
-              <Image
-                src="/identity/project-sponsor-avatar.png"
-                alt="项目赞助者头像"
-                width={48}
-                height={48}
-              />
-              <figcaption>项目赞助者</figcaption>
-            </figure>
-            <figure>
-              <Image
-                src="/identity/package-author-avatar.png"
-                alt="刷机包作者头像"
-                width={48}
-                height={48}
-              />
-              <figcaption>刷机包作者</figcaption>
-            </figure>
+          <div className="release-heading">
+            <h2 id="releases-title">更新日志</h2>
+            <p>刷机包的维护内容与支持范围</p>
           </div>
-          <div className="identity-explanation">
-            <p>
-              本刷机包由作者制作，项目赞助者仅提供赞助支持，并非刷机包作者。
-            </p>
-            <p>
-              <strong>
-                项目赞助者无法提供刷机指导、故障排查等技术帮助，请勿向赞助者咨询技术问题。
-              </strong>
-            </p>
-            <p>由于时间有限，作者目前无法提供技术指导，敬请理解与谅解。</p>
+          <div className="release-list">
+            {resourceReleases.map((release) => (
+              <article
+                className="release-entry"
+                key={release.id}
+                aria-labelledby={`release-${release.id}`}
+              >
+                <div className="release-meta">
+                  <span className="release-badge">{release.label}</span>
+                  <span className="release-version">发布日期</span>
+                  {release.publishedAt && (
+                    <time dateTime={release.publishedAt}>
+                      {release.publishedAt.replaceAll("-", ".")}
+                    </time>
+                  )}
+                </div>
+                <div className="release-body">
+                  <h3 id={`release-${release.id}`}>{release.title}</h3>
+                  <div className="release-columns">
+                    {release.sections.map((section) => (
+                      <div
+                        key={section.title}
+                        className={
+                          section.title === "已知问题"
+                            ? "release-issues"
+                            : undefined
+                        }
+                      >
+                        <h4>{section.title}</h4>
+                        <ul>
+                          {section.items.map((item, index) => (
+                            <li key={index}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="release-footer">
+                    <p>刷机有风险，请先备份重要数据。</p>
+                    <a
+                      href={publicConfig.demoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      核对演示说明 ↗
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
-        <SponsorWorkspace />
         <section
           className="usage-guide"
           id="guide"
           aria-labelledby="guide-title"
         >
-          <h2 id="guide-title">开始之前，了解这几件事</h2>
+          <h2 id="guide-title">赞助与领取说明</h2>
           <div className="guide-columns">
             <div>
-              <h3>按自己的心意支持</h3>
-              <p>
-                任意合法金额都可获取同一份资源。静态收款码不会带入所选金额，请在微信内手动填写。
-              </p>
+              <h3>匿名，也可以领取</h3>
+              <p>QQ 号选填。留空仍可确认并获取资源，也不会出现在公开名单中。</p>
             </div>
             <div>
-              <h3>自主确认后交付</h3>
+              <h3>刷机前，先核对</h3>
               <p>
-                本网站不接入支付核验。点击「我已支付」提交自主确认，记录保存成功后提供资源地址。
+                机型与操作步骤请先以演示说明核对，并备份重要数据。
+                <a href={publicConfig.demoUrl} target="_blank" rel="noreferrer">
+                  查看 B 站演示 ↗
+                </a>
               </p>
             </div>
             <div>
               <h3>回来时，不必再确认</h3>
               <p>
-                同一浏览器内，7
-                天可恢复入口。清除浏览器数据、换设备或记录被删除后，可能无法恢复。
+                同一浏览器内可恢复 7
+                天。清除浏览器数据、换设备或记录被删除后，可能无法恢复。
               </p>
             </div>
           </div>

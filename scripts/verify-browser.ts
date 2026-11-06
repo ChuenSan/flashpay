@@ -77,7 +77,7 @@ try {
     "PASS browser: concurrent first-load tabs serialize delayed cookie initialization",
   );
   await page
-    .getByRole("button", { name: "我已支付", exact: true })
+    .getByRole("button", { name: "我已付款，确认赞助", exact: true })
     .waitFor({ state: "visible" });
   await page.waitForFunction(
     () =>
@@ -104,7 +104,9 @@ try {
       }),
     { times: 1 },
   );
-  await page.getByRole("button", { name: "我已支付", exact: true }).click();
+  await page
+    .getByRole("button", { name: "我已付款，确认赞助", exact: true })
+    .click();
   await page.locator(".form-error[role=alert]").waitFor();
   assert.equal(await page.getByRole("link", { name: /打开下载/ }).count(), 0);
   assert.equal(await page.locator("#custom-amount").inputValue(), "12.34");
@@ -129,13 +131,17 @@ try {
     },
     { times: 1 },
   );
-  await page.getByRole("button", { name: "我已支付", exact: true }).click();
+  await page
+    .getByRole("button", { name: "我已付款，确认赞助", exact: true })
+    .click();
   await page.locator(".form-error[role=alert]").waitFor();
   const retryRequest = page.waitForRequest(
     (request) =>
       request.url().endsWith("/api/confirm") && request.method() === "POST",
   );
-  await page.getByRole("button", { name: "我已支付", exact: true }).click();
+  await page
+    .getByRole("button", { name: "我已付款，确认赞助", exact: true })
+    .click();
   assert.equal(
     (await retryRequest).postDataJSON().idempotencyKey,
     committedKey,

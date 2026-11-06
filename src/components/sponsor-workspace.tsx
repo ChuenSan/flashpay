@@ -56,6 +56,7 @@ export function SponsorWorkspace() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const attemptRef = useRef<Attempt | null>(null);
   const resultRef = useRef<HTMLHeadingElement>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
   const inFlight = useRef(false);
   const secondsLeft = Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
   const selectedAmount = parseAmountCents(amount);
@@ -158,6 +159,10 @@ export function SponsorWorkspace() {
     return () => clearInterval(timer);
   }, [cooldownUntil]);
 
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current || !ready) return;
@@ -259,7 +264,7 @@ export function SponsorWorkspace() {
   }
 
   return (
-    <>
+    <div className="sponsor-workspace">
       <section
         className="workspace"
         aria-label="赞助与资源入口"
@@ -269,7 +274,15 @@ export function SponsorWorkspace() {
           <h2>{unlock ? "你的资源入口" : "随心赞助，获取资源"}</h2>
           <span className={unlock ? "state-label is-unlocked" : "state-label"}>
             <i aria-hidden="true" />
-            {unlock ? "资源已解锁" : "等待自主确认"}
+            {unlock
+              ? "记录已保存"
+              : checking
+                ? "正在检测入口"
+                : !ready
+                  ? "检测未完成"
+                  : busy
+                    ? "正在保存"
+                    : "等待自主确认"}
           </span>
         </div>
         {unlock ? (
@@ -278,9 +291,9 @@ export function SponsorWorkspace() {
               ✓
             </span>
             <h3 ref={resultRef} tabIndex={-1}>
-              谢谢你的支持。
+              资源入口已解锁
             </h3>
-            <p>赞助确认已保存。刷机前，请再次核对机型与操作步骤。</p>
+            <p>赞助记录已保存，谢谢你的支持。</p>
             <a
               className="primary-button download-button"
               href={unlock.downloadUrl}
@@ -306,21 +319,35 @@ export function SponsorWorkspace() {
               </div>
             )}
             <div className="restore-note">
-              此浏览器可恢复至{" "}
-              {new Intl.DateTimeFormat("zh-CN", {
-                timeZone: "Asia/Shanghai",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              }).format(new Date(unlock.expiresAt))}
-              （北京时间）。
-              <br />
-              清除浏览器数据、换设备或记录被删除后，可能无法恢复。
+              <strong>
+                此浏览器可恢复至{" "}
+                {new Intl.DateTimeFormat("zh-CN", {
+                  timeZone: "Asia/Shanghai",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                }).format(new Date(unlock.expiresAt))}
+                （北京时间）。
+              </strong>
+              <span>清除浏览器数据、换设备或记录被删除后，可能无法恢复。</span>
             </div>
+            <a
+              className="resource-check-link"
+              href={publicConfig.demoUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              刷机前，查看演示核对机型与步骤 ↗
+            </a>
             {error && (
-              <p className="form-error" role="alert">
+              <p
+                className="form-error"
+                role="alert"
+                ref={errorRef}
+                tabIndex={-1}
+              >
                 {error}
               </p>
             )}
@@ -367,19 +394,22 @@ export function SponsorWorkspace() {
                     </button>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  className="custom-toggle"
-                  aria-expanded={custom}
-                  aria-controls="custom-amount-area"
-                  onClick={() => {
-                    setCustom(!custom);
-                    if (!custom) setAmount("");
-                    else setAmount(String(publicConfig.amounts[0] / 100));
-                  }}
-                >
-                  {custom ? "使用固定金额 −" : "自定义金额 ＋"}
-                </button>
+                <div className="amount-meta">
+                  <p className="amount-hint">任意金额，获取同一份资源。</p>
+                  <button
+                    type="button"
+                    className="custom-toggle"
+                    aria-expanded={custom}
+                    aria-controls="custom-amount-area"
+                    onClick={() => {
+                      setCustom(!custom);
+                      if (!custom) setAmount("");
+                      else setAmount(String(publicConfig.amounts[0] / 100));
+                    }}
+                  >
+                    {custom ? "使用固定金额 −" : "自定义金额 ＋"}
+                  </button>
+                </div>
                 {custom && (
                   <div id="custom-amount-area" className="custom-amount">
                     <label htmlFor="custom-amount">自定义金额（元）</label>
@@ -400,36 +430,6 @@ export function SponsorWorkspace() {
                   </div>
                 )}
               </fieldset>
-              <details
-                className="qq-field"
-                open={qqOpen}
-                onToggle={(event) => setQqOpen(event.currentTarget.open)}
-              >
-                <summary>
-                  添加 QQ 号<span>选填</span>
-                </summary>
-                <label htmlFor="qq">QQ 号</label>
-                <input
-                  id="qq"
-                  name="qq"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  maxLength={12}
-                  placeholder="也可以匿名支持"
-                  value={qq}
-                  disabled={busy}
-                  onChange={(e) => setQq(e.target.value)}
-                  aria-describedby="qq-privacy"
-                />
-                <p id="qq-privacy">
-                  完整 QQ
-                  号仅后台可见。填写即同意公开打码号码与自报金额；留空不进入公开名单。
-                </p>
-              </details>
-              <p className="form-privacy">
-                <Link href="/privacy">查看隐私说明</Link>
-              </p>
             </div>
             <div className="payment-area">
               <h3>
@@ -464,10 +464,42 @@ export function SponsorWorkspace() {
                 </p>
               </details>
             </div>
+            <div className="optional-details">
+              <details
+                className="qq-field"
+                open={qqOpen}
+                onToggle={(event) => setQqOpen(event.currentTarget.open)}
+              >
+                <summary>
+                  添加 QQ 号<span>选填</span>
+                </summary>
+                <label htmlFor="qq">QQ 号</label>
+                <input
+                  id="qq"
+                  name="qq"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={12}
+                  placeholder="也可以匿名支持"
+                  value={qq}
+                  disabled={busy}
+                  onChange={(e) => setQq(e.target.value)}
+                  aria-describedby="qq-privacy"
+                />
+                <p id="qq-privacy">
+                  完整 QQ
+                  号仅后台可见。填写即同意公开打码号码与自报金额；留空不进入公开名单。
+                </p>
+              </details>
+              <p className="form-privacy">
+                <Link href="/privacy">隐私说明</Link>
+              </p>
+            </div>
             <div className="confirm-area">
               <div className="confirm-description">
                 <span className="step-number">3</span>
-                <span>转账后，自主确认</span>
+                <span>付款后，自主确认</span>
               </div>
               <button
                 type="submit"
@@ -480,12 +512,18 @@ export function SponsorWorkspace() {
                     ? "正在检测入口…"
                     : secondsLeft > 0
                       ? `${secondsLeft} 秒后可再次确认`
-                      : "我已支付"}
+                      : "我已付款，确认赞助"}
                 <span aria-hidden="true">{busy || checking ? "…" : "→"}</span>
               </button>
+              <p className="confirm-note">本站不自动核验微信到账。</p>
               <div className="form-feedback" aria-live="polite">
                 {error && (
-                  <p className="form-error" role="alert">
+                  <p
+                    className="form-error"
+                    role="alert"
+                    ref={errorRef}
+                    tabIndex={-1}
+                  >
                     {error}
                   </p>
                 )}
@@ -504,12 +542,7 @@ export function SponsorWorkspace() {
         )}
       </section>
       <section className="supporters-section" aria-label="最近的赞助支持">
-        <div className="supporters-title">
-          <span className="support-mark" aria-hidden="true">
-            ＋
-          </span>
-          <span>每一份支持，都心存感谢</span>
-        </div>
+        <div className="supporters-title">感谢每一份支持</div>
         {listError ? (
           <p className="supporters-empty">名单暂时无法更新，感谢你的支持。</p>
         ) : sponsors.length === 0 ? null : (
@@ -527,6 +560,6 @@ export function SponsorWorkspace() {
         )}
         <span className="public-list-label">自报赞助 · 非到账统计</span>
       </section>
-    </>
+    </div>
   );
 }

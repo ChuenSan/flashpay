@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import DownloadSettings from "./download-settings";
+import ReleaseSettings from "./release-settings";
 import "./admin.css";
 
 // Client pages cannot set HTTP response cache headers. The server must send
@@ -701,6 +702,7 @@ export default function AdminPage() {
       </header>
 
       <DownloadSettings request={request} disabled={logoutBusy} />
+      <ReleaseSettings request={request} disabled={logoutBusy} />
 
       <section
         className="admin-overview"

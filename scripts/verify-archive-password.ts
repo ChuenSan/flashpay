@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright-core";
+import { defaultReleaseSettings } from "../src/lib/resource-releases";
 
 const base = process.env.VERIFY_BASE_URL;
 const executablePath = process.env.VERIFY_CHROME_PATH;
@@ -11,8 +12,12 @@ if (
 )
   throw new Error("Requires local VERIFY_BASE_URL and VERIFY_CHROME_PATH.");
 
-const browser = await chromium.launch({ executablePath, headless: true });
-const out = ".scratch/archive-password/shots";
+const browser = await chromium.launch({
+  executablePath,
+  headless: true,
+  args: ["--use-mock-keychain", "--password-store=basic"],
+});
+const out = process.env.VERIFY_SHOTS_DIR || ".scratch/archive-password/shots";
 await mkdir(out, { recursive: true });
 try {
   const context = await browser.newContext({
@@ -45,7 +50,9 @@ try {
     await page.getByText(archivePassword, { exact: true }).count(),
     0,
   );
-  await page.getByRole("button", { name: "我已支付", exact: true }).click();
+  await page
+    .getByRole("button", { name: "我已付款，确认赞助", exact: true })
+    .click();
   await page.getByRole("link", { name: /打开下载/ }).waitFor();
   assert.ok(
     (await page.locator(".unlock-panel").innerText()).includes(archivePassword),
@@ -110,6 +117,9 @@ try {
         },
       },
     }),
+  );
+  await context.route("**/api/admin/resource-release", (route) =>
+    route.fulfill({ json: defaultReleaseSettings }),
   );
   await context.route("**/api/admin/settings", (route) => {
     if (route.request().method() === "PUT")

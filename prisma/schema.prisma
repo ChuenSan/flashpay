@@ -64,3 +64,13 @@ model AdminSession {
 
   @@index([expiresAt])
 }
+
+// Public release metadata; the application always uses id = "current".
+model ResourceReleaseSetting {
+  id          String @id
+  version     String
+  publishedAt String
+  changes     String
+  knownIssues String
+  updatedAt   String
+}

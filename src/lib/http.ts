@@ -35,6 +35,7 @@ export function requireOrigin(request: Request): void {
 // Route bodies are small; enforce a streaming limit rather than trusting Content-Length.
 export async function readJson(
   request: Request,
+  maxBytes = 4096,
 ): Promise<Record<string, unknown>> {
   if (
     request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !==
@@ -51,7 +52,7 @@ export async function readJson(
       const { value, done } = await reader.read();
       if (done) break;
       length += value.length;
-      if (length > 4096) {
+      if (length > maxBytes) {
         await reader.cancel();
         throw new HttpError(413, "请求内容过大", "BODY_TOO_LARGE");
       }
